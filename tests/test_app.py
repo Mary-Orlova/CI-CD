@@ -9,6 +9,7 @@ from src.models import Recipe, RecipeIngredient, Ingredient
 from src.main import app
 import asyncio
 
+
 DATABASE_URL_TEST = "sqlite+aiosqlite:///:memory:"
 
 engine_test = create_async_engine(DATABASE_URL_TEST, echo=True)
@@ -24,7 +25,7 @@ async def override_get_db():
 
 app.dependency_overrides[get_db] = override_get_db
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session", autouse=True)
 async def async_db():
     async with engine_test.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -76,7 +77,6 @@ async def test_create_recipe(client):
 
 @pytest.mark.asyncio
 async def test_update_recipe(client):
-    # Create a recipe first
     recipe_data = {"title": "Old Recipe", "description": "Old Description", "cook_time": 60,
                    "ingredients": [{"title": "Flour", "quantity": "1 cup"}]}
     create_response = await client.post("/recipes/", json=recipe_data)
@@ -86,7 +86,7 @@ async def test_update_recipe(client):
     recipe_id = created_recipe["id"]
 
     update_data = {"title": "Updated Recipe", "description": "Updated Description", "cook_time": 20,
-                   "ingredients": [{"title": "Sugar", "quantity": "1/2 cup"}]}
+                   "ingredients": [{"title": "Sugar", "quantity": "1/2 cup"}]}  # Include ingredients
     response = await client.patch(f"/recipes/{recipe_id}", json=update_data)
     assert response.status_code == 200, f"Expected 200, but got {response.status_code} with content: {response.text}"
     data = response.json()
@@ -96,11 +96,11 @@ async def test_update_recipe(client):
 
 @pytest.mark.asyncio
 async def test_delete_recipe(client):
-    recipe_data = {"title": "Recipe to Delete", "description": "Description to Delete", "cook_time": 30,
-                   "ingredients": [{"title": "Salt", "quantity": "1 tsp"}]}
+    recipe_data = {"title": "Recipe to Delete", "description": "Description to Delete",
+                   "cook_time": 30, "ingredients": [{"title": "Salt", "quantity": "1 tsp"}]}
     create_response = await client.post("/recipes/", json=recipe_data)
-    assert create_response.status_code == 200, (f"Expected 200, but got {create_response.status_code} "
-                                                f"with content: {create_response.text}")
+    assert create_response.status_code == 200, (f"Expected 200, but got {create_response.status_code}"
+                                                f" with content: {create_response.text}")
     created_recipe = create_response.json()
     recipe_id = created_recipe["id"]
 
