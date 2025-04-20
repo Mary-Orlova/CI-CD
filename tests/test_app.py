@@ -1,14 +1,14 @@
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
-from sqlalchemy import select, delete
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker, selectinload
+from sqlalchemy.orm import sessionmaker
 from src.database import Base, get_db
 from src.models import Recipe, RecipeIngredient, Ingredient
 from src.main import app
-from fastapi import FastAPI
 
+# Use an in-memory SQLite database for testing
 DATABASE_URL_TEST = "sqlite+aiosqlite:///:memory:"
 
 engine_test = create_async_engine(DATABASE_URL_TEST, echo=True)
@@ -21,8 +21,6 @@ TestingSessionLocal = sessionmaker(
 async def override_get_db():
     async with TestingSessionLocal() as session:
         yield session
-
-app.dependency_overrides[get_db] = override_get_db
 
 @pytest.fixture(scope="session")
 async def async_db():
