@@ -146,7 +146,7 @@ async def test_delete_recipe(client):
         ingredient = Ingredient(title="Томаты")
         session.add(ingredient)
         await session.commit()
-        await session.refresh(ingredient)  
+        await session.refresh(ingredient)
 
         recipe = Recipe(
             title="Для удаления",
@@ -179,3 +179,7 @@ async def test_delete_recipe(client):
             select(RecipeIngredient).where(RecipeIngredient.recipe_id == recipe_id)
         )
         assert result.scalar_one_or_none() is None
+
+        # Проверка ингредиента (должен остаться)
+        result = await session.execute(select(Ingredient).where(Ingredient.id == ingredient.id))
+        assert result.scalar_one_or_none() is not None

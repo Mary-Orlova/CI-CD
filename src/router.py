@@ -4,8 +4,8 @@ from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from .database import get_db
-from . import schemas, models
+from src.database import get_db
+from src import schemas, models
 
 
 router = APIRouter(
@@ -229,10 +229,10 @@ async def delete_recipe(
                 detail="Рецепт не найден"
             )
 
-        await session.execute(
-            delete(models.RecipeIngredient)
-            .where(models.RecipeIngredient.recipe_id == recipe_id)
-        )
+        # Check if recipe_ingredients is not None before iterating
+        if recipe.recipe_ingredients is not None:
+            for ri in recipe.recipe_ingredients:
+                await session.delete(ri)
 
         # Удаление основного объекта
         await session.delete(recipe)
