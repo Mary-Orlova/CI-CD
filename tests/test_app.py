@@ -152,4 +152,4 @@ async def test_delete_recipe(client):
     assert response.status_code == 204, f"Expected 204, but got {response.status_code}. Response text: {response.text}"
 
     response = await client.get(f"/recipes/{recipe_id}")
-    assert response.status_code == 404  
+    assert response.status_code == 404
