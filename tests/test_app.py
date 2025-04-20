@@ -93,7 +93,6 @@ async def test_create_recipe(client):
         assert len(recipes) == 1
         assert recipes[0].title == recipe_data["title"]
 
-
 @pytest.mark.asyncio
 async def test_update_recipe(client):
     """Тест PATCH-запроса (частичное обновление рецепта)"""
@@ -102,7 +101,7 @@ async def test_update_recipe(client):
             title="Старый рецепт",
             description="Старое описание",
             cook_time=60,
-            views=0  # Добавляем проверку views
+            views=0
         )
         session.add(recipe)
         await session.commit()
@@ -126,7 +125,7 @@ async def test_update_recipe(client):
     assert data["title"] == update_data["title"]
     assert data["description"] == update_data["description"]
     assert data["cook_time"] == update_data["cook_time"]
-    assert data["views"] == 0  # Проверка неизменного поля
+    assert data["views"] == 0
 
     # Проверка в БД
     async with TestingSessionLocal() as session:
@@ -136,7 +135,6 @@ async def test_update_recipe(client):
         assert updated_recipe.description == update_data["description"]
         assert updated_recipe.cook_time == update_data["cook_time"]
         assert updated_recipe.views == 0
-
 
 @pytest.mark.asyncio
 async def test_delete_recipe(client):
