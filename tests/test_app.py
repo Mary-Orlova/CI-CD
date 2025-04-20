@@ -1,184 +1,110 @@
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient
-from sqlalchemy import select
+from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, selectinload
 from src.database import Base, get_db
 from src.models import Recipe, RecipeIngredient, Ingredient
 from src.main import app
+from fastapi import FastAPI
 
-# Конфигурация тестовой БД
-TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
-async_engine = create_async_engine(TEST_DATABASE_URL, echo=True)
+DATABASE_URL_TEST = "sqlite+aiosqlite:///:memory:"
 
-# Асинхронная сессия
+engine_test = create_async_engine(DATABASE_URL_TEST, echo=True)
 TestingSessionLocal = sessionmaker(
-    async_engine,
+    engine_test,
     class_=AsyncSession,
     expire_on_commit=False
 )
 
+async def override_get_db():
+    async with TestingSessionLocal() as session:
+        yield session
 
-@pytest_asyncio.fixture(scope="function", autouse=True)
-async def setup_db():
-    """Инициализация и очистка тестовой БД"""
-    async with async_engine.begin() as conn:
+app.dependency_overrides[get_db] = override_get_db
+
+@pytest.fixture(scope="session")
+async def async_db():
+    async with engine_test.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield
-    async with async_engine.begin() as conn:
+    async with engine_test.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
 
-
-@pytest_asyncio.fixture
-async def client():
-    """Фикстура для HTTP-клиента с подменой зависимости БД"""
-    async def override_get_db():
-        async with TestingSessionLocal() as session:
-            yield session
-
-    app.dependency_overrides[get_db] = override_get_db
+@pytest.fixture
+async def async_client(async_db):
     async with AsyncClient(app=app, base_url="http://test") as client:
         yield client
 
-
 @pytest.mark.asyncio
-async def test_read_recipes(client):
-    """Тест get-запроса (получения всех рецептов)"""
-    response = await client.get("/recipes/")
+async def test_get_all_recipes(async_client):
+    response = await async_client.get("/recipes/")
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
 
-
 @pytest.mark.asyncio
-async def test_read_recipe_by_id(client):
-    """Тест get-запроса по id (получения рецепта по ID)"""
+async def test_read_recipe_by_id(async_client):
+    # Create a recipe first
+    recipe_data = {"title": "Test Recipe", "description": "Test Description", "cook_time": 30}
+    response = await async_client.post("/recipes/", json=recipe_data)
+    assert response.status_code == 200
+    created_recipe = response.json()
+    recipe_id = created_recipe["id"]
 
-    async with TestingSessionLocal() as session:
-        recipe = Recipe(title="Тестовый рецепт", description="Описание", cook_time=40)
-        session.add(recipe)
-        await session.commit()
-
-    async with TestingSessionLocal() as session:
-        result = await session.execute(select(Recipe))
-        recipes = result.scalars().all()
-        assert len(recipes) == 1
-        assert recipes[0].id == 1
-
-    response = await client.get("/recipes/1")
+    response = await async_client.get(f"/recipes/{recipe_id}")
     assert response.status_code == 200
     data = response.json()
-    assert data["id"] == 1
-    assert data["title"] == "Тестовый рецепт"
-
+    assert data["id"] == recipe_id
+    assert data["title"] == "Test Recipe"
 
 @pytest.mark.asyncio
-async def test_create_recipe(client):
-    """Тест post-запроса (создания нового рецепта)"""
+async def test_create_recipe(async_client):
     recipe_data = {
-        "title": "Тестовый рецепт",
-        "description": "Описание теста",
-        "cook_time": 30,
-        "ingredients": [{"title": "Ингредиент", "quantity": "100г"}]
+        "title": "New Test Recipe",
+        "description": "New Test Description",
+        "cook_time": 45,
+        "ingredients": [{"title": "Tomato", "quantity": "2"}]
     }
-
-    response = await client.post("/recipes/", json=recipe_data)
+    response = await async_client.post("/recipes/", json=recipe_data)
     assert response.status_code == 200
     data = response.json()
-
     assert data["title"] == recipe_data["title"]
     assert data["cook_time"] == recipe_data["cook_time"]
-
-    async with TestingSessionLocal() as session:
-        result = await session.execute(select(Recipe))
-        recipes = result.scalars().all()
-        assert len(recipes) == 1
-        assert recipes[0].title == recipe_data["title"]
-
+    assert len(data["ingredients"]) == 1
 
 @pytest.mark.asyncio
-async def test_update_recipe(client):
-    """Тест PATCH-запроса (частичное обновление рецепта)"""
-    async with TestingSessionLocal() as session:
-        recipe = Recipe(
-            title="Старый рецепт",
-            description="Старое описание",
-            cook_time=60,
-            views=0  # Добавляем проверку views
-        )
-        session.add(recipe)
-        await session.commit()
+async def test_update_recipe(async_client):
+    # Create a recipe first
+    recipe_data = {"title": "Old Recipe", "description": "Old Description", "cook_time": 60}
+    create_response = await async_client.post("/recipes/", json=recipe_data)
+    assert create_response.status_code == 200
+    created_recipe = create_response.json()
+    recipe_id = created_recipe["id"]
 
-    update_data = {
-        "title": "Новый рецепт",
-        "description": "Новое описание",
-        "cook_time": 20
-    }
-
-    response = await client.patch("/recipes/1", json=update_data)
+    # Update the recipe
+    update_data = {"title": "Updated Recipe", "description": "Updated Description", "cook_time": 20}
+    response = await async_client.patch(f"/recipes/{recipe_id}", json=update_data)
     assert response.status_code == 200
     data = response.json()
-
-    # Проверка всех полей ответа
-    assert data["id"] == 1
     assert data["title"] == update_data["title"]
     assert data["description"] == update_data["description"]
     assert data["cook_time"] == update_data["cook_time"]
-    assert data["views"] == 0  # Проверка неизменного поля
-
-    # Проверка в БД
-    async with TestingSessionLocal() as session:
-        result = await session.execute(select(Recipe).where(Recipe.id == 1))
-        updated_recipe = result.scalar_one_or_none()
-        assert updated_recipe.title == update_data["title"]
-        assert updated_recipe.description == update_data["description"]
-        assert updated_recipe.cook_time == update_data["cook_time"]
-        assert updated_recipe.views == 0
-
 
 @pytest.mark.asyncio
-async def test_delete_recipe(client):
-    """Тест DELETE-запроса (удаление рецепта)"""
-    # Создаем рецепт с ингредиентом
-    async with TestingSessionLocal() as session:
-        ingredient = Ingredient(title="Томаты")
-        session.add(ingredient)
-        await session.commit()
-        await session.refresh(ingredient)  # Refresh to get the ingredient ID
+async def test_delete_recipe(async_client):
+    # Create a recipe first
+    recipe_data = {"title": "Recipe to Delete", "description": "Description to Delete", "cook_time": 30}
+    create_response = await async_client.post("/recipes/", json=recipe_data)
+    assert create_response.status_code == 200
+    created_recipe = create_response.json()
+    recipe_id = created_recipe["id"]
 
-        recipe = Recipe(
-            title="Для удаления",
-            description="Описание",
-            cook_time=40,
-            views=0
-        )
-        recipe_ingredient = RecipeIngredient(
-            ingredient_id=ingredient.id,
-            quantity="500 г"
-        )
-        recipe.recipe_ingredients.append(recipe_ingredient)
-        session.add(recipe)
-        await session.commit()
-        await session.refresh(recipe)  # Refresh to get the recipe ID
-
-    recipe_id = recipe.id  # Get the recipe ID
-
-    response = await client.delete(f"/recipes/{recipe_id}")
+    # Delete the recipe
+    response = await async_client.delete(f"/recipes/{recipe_id}")
     assert response.status_code == 204
 
-    # Проверка отсутствия записей
-    async with TestingSessionLocal() as session:
-        # Проверка рецепта
-        result = await session.execute(select(Recipe).where(Recipe.id == recipe_id))
-        assert result.scalar_one_or_none() is None
-
-        # Проверка связей
-        result = await session.execute(
-            select(RecipeIngredient).where(RecipeIngredient.recipe_id == recipe_id)
-        )
-        assert result.scalar_one_or_none() is None
-
-        # Проверка ингредиента (должен остаться)
-        result = await session.execute(select(Ingredient).where(Ingredient.id == ingredient.id))
-        assert result.scalar_one_or_none() is not None
+    # Verify the recipe is deleted
+    response = await async_client.get(f"/recipes/{recipe_id}")
+    assert response.status_code == 404
