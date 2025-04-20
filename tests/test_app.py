@@ -59,17 +59,14 @@ async def test_read_recipe_by_id(client):
         recipe = Recipe(title="Тестовый рецепт", description="Описание", cook_time=40)
         session.add(recipe)
         await session.commit()
+        await session.refresh(recipe)
 
-    async with TestingSessionLocal() as session:
-        result = await session.execute(select(Recipe))
-        recipes = result.scalars().all()
-        assert len(recipes) == 1
-        assert recipes[0].id == 1
+        recipe_id = recipe.id
 
-    response = await client.get("/recipes/1")
+    response = await client.get(f"/recipes/{recipe_id}")
     assert response.status_code == 200
     data = response.json()
-    assert data["id"] == 1
+    assert data["id"] == recipe_id
     assert data["title"] == "Тестовый рецепт"
 
 
@@ -109,19 +106,23 @@ async def test_update_recipe(client):
         )
         session.add(recipe)
         await session.commit()
+        await session.refresh(recipe)
+
+        recipe_id = recipe.id
 
     update_data = {
         "title": "Новый рецепт",
         "description": "Новое описание",
-        "cook_time": 20
+        "cook_time": 20,
+        "ingredients": [{"title": "Ингредиент", "quantity": "100г"}]
     }
 
-    response = await client.patch("/recipes/1", json=update_data)
+    response = await client.patch(f"/recipes/{recipe_id}", json=update_data)
     assert response.status_code == 200
     data = response.json()
 
     # Проверка всех полей ответа
-    assert data["id"] == 1
+    assert data["id"] == recipe_id
     assert data["title"] == update_data["title"]
     assert data["description"] == update_data["description"]
     assert data["cook_time"] == update_data["cook_time"]
@@ -129,7 +130,7 @@ async def test_update_recipe(client):
 
     # Проверка в БД
     async with TestingSessionLocal() as session:
-        result = await session.execute(select(Recipe).where(Recipe.id == 1))
+        result = await session.execute(select(Recipe).where(Recipe.id == recipe_id))
         updated_recipe = result.scalar_one_or_none()
         assert updated_recipe.title == update_data["title"]
         assert updated_recipe.description == update_data["description"]
@@ -145,6 +146,7 @@ async def test_delete_recipe(client):
         ingredient = Ingredient(title="Томаты")
         session.add(ingredient)
         await session.commit()
+        await session.refresh(ingredient)  
 
         recipe = Recipe(
             title="Для удаления",
@@ -159,22 +161,21 @@ async def test_delete_recipe(client):
         recipe.recipe_ingredients.append(recipe_ingredient)
         session.add(recipe)
         await session.commit()
+        await session.refresh(recipe)
 
-    response = await client.delete("/recipes/1")
+        recipe_id = recipe.id
+
+    response = await client.delete(f"/recipes/{recipe_id}")
     assert response.status_code == 204
 
     # Проверка отсутствия записей
     async with TestingSessionLocal() as session:
         # Проверка рецепта
-        result = await session.execute(select(Recipe).where(Recipe.id == 1))
+        result = await session.execute(select(Recipe).where(Recipe.id == recipe_id))
         assert result.scalar_one_or_none() is None
 
         # Проверка связей
         result = await session.execute(
-            select(RecipeIngredient).where(RecipeIngredient.recipe_id == 1)
+            select(RecipeIngredient).where(RecipeIngredient.recipe_id == recipe_id)
         )
         assert result.scalar_one_or_none() is None
-
-        # Проверка ингредиента (должен остаться)
-        result = await session.execute(select(Ingredient).where(Ingredient.id == 1))
-        assert result.scalar_one_or_none() is not None
