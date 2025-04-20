@@ -93,6 +93,7 @@ async def test_create_recipe(client):
         assert len(recipes) == 1
         assert recipes[0].title == recipe_data["title"]
 
+
 @pytest.mark.asyncio
 async def test_update_recipe(client):
     """Тест PATCH-запроса (частичное обновление рецепта)"""
@@ -109,32 +110,32 @@ async def test_update_recipe(client):
 
         recipe_id = recipe.id
 
-    update_data = {
-        "title": "Новый рецепт",
-        "description": "Новое описание",
-        "cook_time": 20,
-        "ingredients": [{"title": "Ингредиент", "quantity": "100г"}]
-    }
+        update_data = {
+            "title": "Новый рецепт",
+            "description": "Новое описание",
+            "cook_time": 20,
+            "ingredients": [{"title": "Ингредиент", "quantity": "100г"}]
+        }
 
-    response = await client.patch(f"/recipes/{recipe_id}", json=update_data)
-    assert response.status_code == 200
-    data = response.json()
+        response = await client.patch(f"/recipes/{recipe_id}", json=update_data)
+        assert response.status_code == 200
+        data = response.json()
 
-    # Проверка всех полей ответа
-    assert data["id"] == recipe_id
-    assert data["title"] == update_data["title"]
-    assert data["description"] == update_data["description"]
-    assert data["cook_time"] == update_data["cook_time"]
-    assert data["views"] == 0
+        # Проверка всех полей ответа
+        assert data["id"] == recipe_id
+        assert data["title"] == update_data["title"]
+        assert data["description"] == update_data["description"]
+        assert data["cook_time"] == update_data["cook_time"]
+        assert data["views"] == 0
 
-    # Проверка в БД
-    async with TestingSessionLocal() as session:
+        # Проверка в БД
         result = await session.execute(select(Recipe).where(Recipe.id == recipe_id))
         updated_recipe = result.scalar_one_or_none()
         assert updated_recipe.title == update_data["title"]
         assert updated_recipe.description == update_data["description"]
         assert updated_recipe.cook_time == update_data["cook_time"]
         assert updated_recipe.views == 0
+
 
 @pytest.mark.asyncio
 async def test_delete_recipe(client):
@@ -163,12 +164,10 @@ async def test_delete_recipe(client):
 
         recipe_id = recipe.id
 
-    response = await client.delete(f"/recipes/{recipe_id}")
-    assert response.status_code == 204
+        response = await client.delete(f"/recipes/{recipe_id}")
+        assert response.status_code == 204
 
-    # Проверка отсутствия записей
-    async with TestingSessionLocal() as session:
-        # Проверка рецепта
+        # Проверка отсутствия записей
         result = await session.execute(select(Recipe).where(Recipe.id == recipe_id))
         assert result.scalar_one_or_none() is None
 
