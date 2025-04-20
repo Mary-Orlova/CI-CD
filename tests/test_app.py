@@ -6,11 +6,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from src.database import Base, get_db
-from src import models
-from src import schemas
+from src import models, schemas
 from src.main import app
 
-# Конфигурация тестовой базы данных - ИСПОЛЬЗУЕМ ФАЙЛ
+
+# Конфигурация тестовой базы данных
 TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
 async_engine = create_async_engine(TEST_DATABASE_URL, echo=True)
 
@@ -120,14 +120,13 @@ async def test_update_recipe(client):
     recipe_id = create_resp.json()["id"]
 
     update_data = {
-        "title": "Новый рецепт для обновления",
+        "title": "Новый уникальный рецепт для обновления",
         "description": "Новое описание",
         "cook_time": 20,
         "ingredients": [{"title": "Новый ингредиент", "quantity": "200г"}]
     }
     response = await client.patch(f"/recipes/{recipe_id}", json=update_data)
-    assert response.status_code == 200, (f"Expected 200, but got {response.status_code}. "
-                                         f" Response text: {response.text}")
+    assert response.status_code == 200, f"Expected 200, but got {response.status_code}.  Response text: {response.text}"
     data = response.json()
     assert data["id"] == recipe_id
     assert data["title"] == update_data["title"]
@@ -150,7 +149,8 @@ async def test_delete_recipe(client):
     recipe_id = create_resp.json()["id"]
 
     response = await client.delete(f"/recipes/{recipe_id}")
-    assert response.status_code == 204, f"Expected 204, but got {response.status_code}. Response text: {response.text}"
+    assert response.status_code == 204, (f"Expected 204, but got {response.status_code}."
+                                         f" Response text: {response.text}")
 
     response = await client.get(f"/recipes/{recipe_id}")
     assert response.status_code == 404
