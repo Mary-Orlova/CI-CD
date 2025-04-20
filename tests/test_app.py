@@ -105,7 +105,6 @@ async def test_create_recipe(client):
     assert data["title"] == recipe_data["title"]
     assert data["cook_time"] == recipe_data["cook_time"]
 
-
 @pytest.mark.asyncio
 async def test_update_recipe(client):
     """Тест PATCH-запроса (частичное обновление рецепта)"""
@@ -121,7 +120,7 @@ async def test_update_recipe(client):
     recipe_id = create_resp.json()["id"]
 
     update_data = {
-        "title": "Новый уникальный рецепт для обновления",
+        "title": "Новый рецепт для обновления",
         "description": "Новое описание",
         "cook_time": 20,
         "ingredients": [{"title": "Новый ингредиент", "quantity": "200г"}]
@@ -135,6 +134,12 @@ async def test_update_recipe(client):
     assert data["description"] == update_data["description"]
     assert data["cook_time"] == update_data["cook_time"]
 
+    response = await client.get(f"/recipes/{recipe_id}")
+    assert response.status_code == 200
+    updated_recipe = response.json()
+    assert updated_recipe["title"] == update_data["title"]
+    assert updated_recipe["description"] == update_data["description"]
+    assert updated_recipe["cook_time"] == update_data["cook_time"]
 
 @pytest.mark.asyncio
 async def test_delete_recipe(client):
