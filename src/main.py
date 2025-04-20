@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from starlette.responses import JSONResponse
 
-from database import engine, Base
+from .database import engine, Base
 from router import router
 
 app = FastAPI(
