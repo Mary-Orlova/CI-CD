@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from starlette.responses import JSONResponse
 
 from .database import engine, Base
-from router import router
+from .router import router
 
 app = FastAPI(
     title="Кулинарная книга API",
