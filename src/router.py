@@ -229,7 +229,6 @@ async def delete_recipe(
                 detail="Рецепт не найден"
             )
 
-        # Удаление связей с ингредиентами
         await session.execute(
             delete(models.RecipeIngredient)
             .where(models.RecipeIngredient.recipe_id == recipe_id)
