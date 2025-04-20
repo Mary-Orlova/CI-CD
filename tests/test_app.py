@@ -35,7 +35,7 @@ async def setup_db():
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)  # Создаем таблицы
     yield
-    
+
     # Удаляем файл БД после завершения всех тестов
     if os.path.exists("test.db"):
         os.remove("test.db")
