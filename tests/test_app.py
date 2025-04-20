@@ -7,9 +7,8 @@ from sqlalchemy.orm import sessionmaker
 from src.database import Base, get_db
 from src.models import Recipe, RecipeIngredient, Ingredient
 from src.main import app
-import asyncio  # Import asyncio
+import asyncio
 
-# Use an in-memory SQLite database for testing
 DATABASE_URL_TEST = "sqlite+aiosqlite:///:memory:"
 
 engine_test = create_async_engine(DATABASE_URL_TEST, echo=True)
@@ -47,8 +46,8 @@ async def test_get_all_recipes(client):
 
 @pytest.mark.asyncio
 async def test_read_recipe_by_id(client):
-    # Create a recipe first
-    recipe_data = {"title": "Test Recipe", "description": "Test Description", "cook_time": 30, "ingredients": [{"title": "Flour", "quantity": "1 cup"}]}  # Include ingredients
+    recipe_data = {"title": "Test Recipe", "description": "Test Description", "cook_time": 30,
+                   "ingredients": [{"title": "Flour", "quantity": "1 cup"}]}
     response = await client.post("/recipes/", json=recipe_data)
     assert response.status_code == 200, f"Expected 200, but got {response.status_code} with content: {response.text}"
     created_recipe = response.json()
@@ -78,14 +77,16 @@ async def test_create_recipe(client):
 @pytest.mark.asyncio
 async def test_update_recipe(client):
     # Create a recipe first
-    recipe_data = {"title": "Old Recipe", "description": "Old Description", "cook_time": 60, "ingredients": [{"title": "Flour", "quantity": "1 cup"}]}  # Include ingredients
+    recipe_data = {"title": "Old Recipe", "description": "Old Description", "cook_time": 60,
+                   "ingredients": [{"title": "Flour", "quantity": "1 cup"}]}
     create_response = await client.post("/recipes/", json=recipe_data)
-    assert create_response.status_code == 200, f"Expected 200, but got {create_response.status_code} with content: {create_response.text}"
+    assert create_response.status_code == 200, (f"Expected 200, but got {create_response.status_code} "
+                                                f"with content: {create_response.text}")
     created_recipe = create_response.json()
     recipe_id = created_recipe["id"]
 
-    # Update the recipe
-    update_data = {"title": "Updated Recipe", "description": "Updated Description", "cook_time": 20, "ingredients": [{"title": "Sugar", "quantity": "1/2 cup"}]}  # Include ingredients
+    update_data = {"title": "Updated Recipe", "description": "Updated Description", "cook_time": 20,
+                   "ingredients": [{"title": "Sugar", "quantity": "1/2 cup"}]}
     response = await client.patch(f"/recipes/{recipe_id}", json=update_data)
     assert response.status_code == 200, f"Expected 200, but got {response.status_code} with content: {response.text}"
     data = response.json()
@@ -95,17 +96,16 @@ async def test_update_recipe(client):
 
 @pytest.mark.asyncio
 async def test_delete_recipe(client):
-    # Create a recipe first
-    recipe_data = {"title": "Recipe to Delete", "description": "Description to Delete", "cook_time": 30, "ingredients": [{"title": "Salt", "quantity": "1 tsp"}]}  # Include ingredients
+    recipe_data = {"title": "Recipe to Delete", "description": "Description to Delete", "cook_time": 30,
+                   "ingredients": [{"title": "Salt", "quantity": "1 tsp"}]}
     create_response = await client.post("/recipes/", json=recipe_data)
-    assert create_response.status_code == 200, f"Expected 200, but got {create_response.status_code} with content: {create_response.text}"
+    assert create_response.status_code == 200, (f"Expected 200, but got {create_response.status_code} "
+                                                f"with content: {create_response.text}")
     created_recipe = create_response.json()
     recipe_id = created_recipe["id"]
 
-    # Delete the recipe
     response = await client.delete(f"/recipes/{recipe_id}")
     assert response.status_code == 204, f"Expected 204, but got {response.status_code} with content: {response.text}"
 
-    # Verify the recipe is deleted
     response = await client.get(f"/recipes/{recipe_id}")
     assert response.status_code == 404, f"Expected 404, but got {response.status_code} with content: {response.text}"
