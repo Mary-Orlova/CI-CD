@@ -7,6 +7,7 @@ from sqlalchemy.orm import sessionmaker
 from src.database import Base, get_db
 from src.models import Recipe, RecipeIngredient, Ingredient
 from src.main import app
+from fastapi import FastAPI
 
 # Use an in-memory SQLite database for testing
 DATABASE_URL_TEST = "sqlite+aiosqlite:///:memory:"
@@ -21,6 +22,8 @@ TestingSessionLocal = sessionmaker(
 async def override_get_db():
     async with TestingSessionLocal() as session:
         yield session
+
+app.dependency_overrides[get_db] = override_get_db
 
 @pytest.fixture(scope="session")
 async def async_db():
