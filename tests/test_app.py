@@ -126,7 +126,8 @@ async def test_update_recipe(client):
         "ingredients": [{"title": "Новый ингредиент", "quantity": "200г"}]
     }
     response = await client.patch(f"/recipes/{recipe_id}", json=update_data)
-    assert response.status_code == 200, f"Expected 200, but got {response.status_code}.  Response text: {response.text}"
+    assert response.status_code == 200, (f"Expected 200, but got {response.status_code}. "
+                                         f" Response text: {response.text}")
     data = response.json()
     assert data["id"] == recipe_id
     assert data["title"] == update_data["title"]
@@ -136,7 +137,7 @@ async def test_update_recipe(client):
 
 @pytest.mark.asyncio
 async def test_delete_recipe(client):
-    """Test DELETE request (deleting a recipe)"""
+    """Тест DELETE-запроса (удаление рецепта)"""
 
     recipe_data = {
         "title": "Для удаления",
