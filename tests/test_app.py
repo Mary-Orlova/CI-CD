@@ -125,7 +125,7 @@ async def test_update_recipe(client):
         "cook_time": 20,
         "ingredients": [{"title": "Новый ингредиент", "quantity": "200г"}]
     }
-    response = await client.patch(f"/recipes/{recipe_id}", json=update_data)
+    response = await client.patch(f"/recipe/{recipe_id}", json=update_data)
     assert response.status_code == 200, (f"Expected 200, but got {response.status_code}. "
                                          f" Response text: {response.text}")
     data = response.json()
