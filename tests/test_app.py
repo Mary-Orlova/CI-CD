@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from src.database import Base, get_db
-from src import Recipe, RecipeIngredient, Ingredient
+from src.models import Recipe, RecipeIngredient, Ingredient
 from src.main import app
 
 # Конфигурация тестовой БД
