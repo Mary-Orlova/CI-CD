@@ -4,9 +4,9 @@ from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
-from ..src.database import Base, get_db
-from ..src.models import Recipe, RecipeIngredient, Ingredient
-from ..src.main import app
+from src.database import Base, get_db
+from src.models import Recipe, RecipeIngredient, Ingredient
+from src.main import app
 
 # Конфигурация тестовой БД
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
