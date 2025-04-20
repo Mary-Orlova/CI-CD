@@ -1,12 +1,12 @@
 import pytest
 import pytest_asyncio
-import os  # Импортируем модуль os для работы с файловой системой
+import os
 from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from src.database import Base, get_db
-from src import models  # Убедитесь, что модели импортируются правильно
+from src import models
 from src import schemas
 from src.main import app
 
@@ -126,8 +126,8 @@ async def test_update_recipe(client):
         "ingredients": [{"title": "Новый ингредиент", "quantity": "200г"}]
     }
     response = await client.patch(f"/recipes/{recipe_id}", json=update_data)
-    assert response.status_code == 200, (f"Expected 200, but got {response.status_code}. "
-                                         f" Response text: {response.text}")
+    assert response.status_code == 200, (f"Expected 200, but got {response.status_code}.  "
+                                         f"Response text: {response.text}")
     data = response.json()
     assert data["id"] == recipe_id
     assert data["title"] == update_data["title"]
