@@ -7,6 +7,7 @@ from sqlalchemy.orm import sessionmaker
 from src.database import Base, get_db
 from src.models import Recipe, RecipeIngredient, Ingredient
 from src.main import app
+import asyncio  # Import asyncio
 
 # Use an in-memory SQLite database for testing
 DATABASE_URL_TEST = "sqlite+aiosqlite:///:memory:"
