@@ -116,25 +116,25 @@ async def test_update_recipe(client):
             "cook_time": 20,
             "ingredients": [{"title": "Ингредиент", "quantity": "100г"}]
         }
+        async with TestingSessionLocal() as session:
+            response = await client.patch(f"/recipes/{recipe_id}", json=update_data)
+            assert response.status_code == 200
+            data = response.json()
 
-        response = await client.patch(f"/recipes/{recipe_id}", json=update_data)
-        assert response.status_code == 200
-        data = response.json()
+            # Проверка всех полей ответа
+            assert data["id"] == recipe_id
+            assert data["title"] == update_data["title"]
+            assert data["description"] == update_data["description"]
+            assert data["cook_time"] == update_data["cook_time"]
+            assert data["views"] == 0
 
-        # Проверка всех полей ответа
-        assert data["id"] == recipe_id
-        assert data["title"] == update_data["title"]
-        assert data["description"] == update_data["description"]
-        assert data["cook_time"] == update_data["cook_time"]
-        assert data["views"] == 0
-
-        # Проверка в БД
-        result = await session.execute(select(Recipe).where(Recipe.id == recipe_id))
-        updated_recipe = result.scalar_one_or_none()
-        assert updated_recipe.title == update_data["title"]
-        assert updated_recipe.description == update_data["description"]
-        assert updated_recipe.cook_time == update_data["cook_time"]
-        assert updated_recipe.views == 0
+            # Проверка в БД
+            result = await session.execute(select(Recipe).where(Recipe.id == recipe_id))
+            updated_recipe = result.scalar_one_or_none()
+            assert updated_recipe.title == update_data["title"]
+            assert updated_recipe.description == update_data["description"]
+            assert updated_recipe.cook_time == update_data["cook_time"]
+            assert updated_recipe.views == 0
 
 
 @pytest.mark.asyncio
