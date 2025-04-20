@@ -86,7 +86,7 @@ async def test_update_recipe(client):
     recipe_id = created_recipe["id"]
 
     update_data = {"title": "Updated Recipe", "description": "Updated Description", "cook_time": 20,
-                   "ingredients": [{"title": "Sugar", "quantity": "1/2 cup"}]}  # Include ingredients
+                   "ingredients": [{"title": "Sugar", "quantity": "1/2 cup"}]}
     response = await client.patch(f"/recipes/{recipe_id}", json=update_data)
     assert response.status_code == 200, f"Expected 200, but got {response.status_code} with content: {response.text}"
     data = response.json()
@@ -99,8 +99,8 @@ async def test_delete_recipe(client):
     recipe_data = {"title": "Recipe to Delete", "description": "Description to Delete",
                    "cook_time": 30, "ingredients": [{"title": "Salt", "quantity": "1 tsp"}]}
     create_response = await client.post("/recipes/", json=recipe_data)
-    assert create_response.status_code == 200, (f"Expected 200, but got {create_response.status_code}"
-                                                f" with content: {create_response.text}")
+    assert create_response.status_code == 200, (f"Expected 200, but got {create_response.status_code} "
+                                                f"with content: {create_response.text}")
     created_recipe = create_response.json()
     recipe_id = created_recipe["id"]
 
